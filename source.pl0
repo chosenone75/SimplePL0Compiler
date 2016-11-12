@@ -1,10 +1,13 @@
 const m = 7, n = 85;
-var x, y, z, q, r;
+var x:integer,y:integer,z:integer,q:integer,r:integer;
 
-(*这是一段PL0注释*)
+(*
+  PL0源程序：  
+  功能：计算两数的乘积
+*)
 
 procedure multiply;
-var a, b;
+var a:integer,b:integer;
 begin
 	a := x; b := y; z := 0;
 	while b > 0 do

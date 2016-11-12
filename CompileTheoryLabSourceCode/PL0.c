@@ -243,6 +243,7 @@ void enter(int kind)
     mask* mk;
     tx++;
     strcpy(table[tx].name, id);
+	//printf("%s\n",id);
     table[tx].kind = kind;
     switch (kind)
     {
@@ -254,12 +255,11 @@ void enter(int kind)
         }
         table[tx].value = num;
         break;
-    case ID_VARIABLE:
-        mk = (mask*) &table[tx];
+    case ID_INTEGER:
+		mk = (mask*) &table[tx];
         mk->level = level;
         mk->address = dx++;
-        break;
-    case ID_INTEGER:
+		break;
 	case ID_BOOLEAN:
 		mk = (mask*) &table[tx];
         mk->level = level;
@@ -269,7 +269,6 @@ void enter(int kind)
         mk = (mask*) &table[tx];
         mk->level = level;
         break;
-	
     } // switch
 } // enter
 
@@ -316,12 +315,39 @@ void constdeclaration()
 } // constdeclaration
 
 //////////////////////////////////////////////////////////////////////
+/*
+var_option → ε| var var_decl_list
+var_decl_list → var_decl; | var_decl,var_decl_list
+var_decl → ident : data_type
+data_type → integer | boolean
+*/
 void vardeclaration(void)
 {
     if (sym == SYM_IDENTIFIER)
     {
-        enter(ID_VARIABLE);
+		//保存当前id
+		char idTobeEntered[MAXIDLEN + 1];
+		strcpy(idTobeEntered,id);
+
+        //enter(ID_VARIABLE);
         getsym();
+		if(sym == SYM_COLON){
+			getsym();
+			if(sym == SYM_BOOLEAN || sym == SYM_INTEGER){
+				//恢复id 并填入
+				strcpy(id,idTobeEntered);
+				
+				if(sym == SYM_BOOLEAN) enter(ID_BOOLEAN);
+				else enter(ID_INTEGER);
+				getsym();
+			}
+			else{
+				error(27);
+			}
+		}
+		else{
+			error(26);//必须声明变量的类型
+		}
     }
     else
     {
@@ -333,7 +359,6 @@ void vardeclaration(void)
 void listcode(int from, int to)
 {
     int i;
-    
     printf("\n");
     for (i = from; i < to; i++)
     {
@@ -352,7 +377,6 @@ factor ——> id
              | num
 			 | ( expression )
 			 ;
-
 */
 
 void factor(symset fsys)
@@ -379,10 +403,13 @@ void factor(symset fsys)
                 case ID_CONSTANT:
                     gen(LIT, 0, table[i].value);
                     break;
-                case ID_VARIABLE:
+                case ID_INTEGER:
                     mk = (mask*) &table[i];
                     gen(LOD, level - mk->level, mk->address);
                     break;
+				case ID_BOOLEAN:
+					//此处gen 将布尔值转为整数值的代码并置于栈顶
+					break;
                 case ID_PROCEDURE:
                     error(21); // Procedure identifier can not be in an expression.
                     break;
@@ -573,7 +600,7 @@ void statement(symset fsys)
         {
             error(11); // Undeclared identifier.
         }
-        else if (table[i].kind != ID_VARIABLE)
+        else if (table[i].kind != ID_INTEGER && table[i].kind != ID_BOOLEAN)
         {
             error(12); // Illegal assignment.
             i = 0;
@@ -587,7 +614,11 @@ void statement(symset fsys)
         {
             error(13); // ':=' expected.
         }
+
         expression(fsys);
+
+		//此处gen目标代码 增加类型转换语句 强转 例如 int->boolean 根据id的类型进行判断
+
         mk = (mask*) &table[i];
         if (i)
         {
@@ -735,6 +766,7 @@ void block(symset fsys)
                 {
                     getsym();
                 }
+
                 else
                 {
                     error(5); // Missing ',' or ';'.
@@ -762,6 +794,7 @@ void block(symset fsys)
                 else
                 {
                     error(5); // Missing ',' or ';'.
+					
                 }
             }
             while (sym == SYM_IDENTIFIER);
