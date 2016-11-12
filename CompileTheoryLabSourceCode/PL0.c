@@ -15,7 +15,6 @@
 void error(int n)
 {
     int i;
-
     printf("      ");
     for (i = 1; i <= cc - 1; i++)
         printf(" ");
@@ -49,9 +48,16 @@ void getch(void)
     ch = line[++cc];
 } // getch
 
+/////////////////////////////////////////////
+//回退一个字符
+void back(char pre){
+	cc--;
+	ch = pre;
+}
+
 //////////////////////////////////////////////////////////////////////
 // gets a symbol from input stream.
-
+int isComment = 0;
 void getsym(void)
 {
     //词法分析器，实现识别各个词法单元的有限自动机
@@ -59,7 +65,33 @@ void getsym(void)
 
     int i, k;
     char a[MAXIDLEN + 1];
+	char pre;
 
+	
+    while (ch == ' ' || ch == '\t' || (int)ch == 9) //changedbyran 略过一些奇怪的非打印字符：)，可能是记事本的原因
+        getch();
+
+	// 添加注释功能 changedbyran
+	while(ch == '(' || isComment){
+		 pre = ch;
+         getch();
+		 if(pre == '(' && !isComment){
+			if(ch == '*')
+		        isComment = 1;//标志进入注释
+			else{
+				//回退字符 (
+				back(pre);
+				break;//跳出此循环
+			}
+		 }
+         if(isComment && (pre == '*' && ch == ')')){
+		     isComment = 0;
+			 //printf("%s","Comment Complete");
+			 getch();
+		 }	 
+	}
+
+	
     while (ch == ' ' || ch == '\t' || (int)ch == 9) //changedbyran 略过一些奇怪的非打印字符：)，可能是记事本的原因
         getch();
 
@@ -425,7 +457,7 @@ expression ——> + term T
 				   ;
 T    ——> + term T
            |     - term T
-           |  epsilon
+           |  ε
 		   ;
 */   
 
@@ -478,7 +510,7 @@ void condition(symset fsys)
     {
         getsym();
         expression(fsys);
-        gen(OPR, 0, 6);
+		gen(OPR, 0, OPR_ODD);
     }
     else
     {
@@ -518,7 +550,7 @@ void condition(symset fsys)
         } // else
     } // else
 } // condition
-
+//ε
 //////////////////////////////////////////////////////////////////////
 
 void statement(symset fsys)
@@ -527,7 +559,8 @@ void statement(symset fsys)
     symset set1, set;
 
     if (sym == SYM_IDENTIFIER)
-    { // variable assignment
+    { 
+		// variable assignment
         mask* mk;
         if (! (i = position(id)))
         {
