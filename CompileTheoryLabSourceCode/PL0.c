@@ -43,7 +43,7 @@ void getch(void)
             line[++ll] = ch;
         } // while
         printf("\n");
-        line[++ll] = ' ';
+        line[++ll] = ' ';	
     }
     ch = line[++cc];
 } // getch
@@ -148,7 +148,7 @@ void getsym(void)
         }
         else
         {
-            sym = SYM_NULL;       // illegal?
+            sym = SYM_COLON;       // illegal? changedbyran
         }
     }
     else if (ch == '>')
@@ -259,10 +259,17 @@ void enter(int kind)
         mk->level = level;
         mk->address = dx++;
         break;
-    case ID_PROCEDURE:
+    case ID_INTEGER:
+	case ID_BOOLEAN:
+		mk = (mask*) &table[tx];
+        mk->level = level;
+        mk->address = dx++;
+		break;
+	case ID_PROCEDURE:
         mk = (mask*) &table[tx];
         mk->level = level;
         break;
+	
     } // switch
 } // enter
 
