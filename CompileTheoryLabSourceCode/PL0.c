@@ -829,7 +829,62 @@ void statement(symset fsys)
         statement(fsys);
         gen(JMP, 0, cx1);
         code[cx2].a = cx;
-    }
+	}else if(sym == SYM_PLUSPLUS)
+	{
+		//++运算
+        mask* mk;
+		getsym();
+		if(sym == SYM_IDENTIFIER){
+		       if (! (i = position(id)))
+				{
+					error(11); // Undeclared identifier.
+				}
+				else if (table[i].kind != ID_INTEGER)
+				{
+					error(28); // Illegal assignment.
+					i = 0;
+			   }else{
+				    getsym();
+				    mk = (mask*) &table[i];
+					if (i)
+					{
+						gen(LOD,level - mk->level,mk->address);//找到变量地址，将其值入栈
+                        gen(LIT,0,1);//将常数1取到栈顶
+						gen(OPR,0,OPR_ADD);
+						gen(STO, level - mk->level, mk->address);//level - mk->level 即为 level_diff 层次差
+					}
+			   }	
+		}else{
+			error(29);
+		}
+	}else if(sym == SYM_MINUSMINUS){
+		//--运算
+        mask* mk;
+		getsym();
+		if(sym == SYM_IDENTIFIER){
+		       if (!(i = position(id)))
+				{
+					error(11); // Undeclared identifier.
+				}
+				else if (table[i].kind != ID_INTEGER)
+				{
+					error(28); // Illegal assignment.
+					i = 0;
+			   }else{
+				    getsym();
+				    mk = (mask*) &table[i];
+					if (i)
+					{
+						gen(LOD,level - mk->level,mk->address);//找到变量地址，将其值入栈
+                        gen(LIT,0,1);//将常数1取到栈顶
+						gen(OPR,0,OPR_MIN);
+						gen(STO, level - mk->level, mk->address);//level - mk->level 即为 level_diff 层次差
+					}
+			   }	
+		}else{
+			error(29);
+		}
+	}
     test(fsys, phi, 19);
 } // statement
             
@@ -1159,7 +1214,7 @@ void main()
     
     // create begin symbol sets
     declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
-    statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL);
+	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL,SYM_PLUSPLUS,SYM_MINUSMINUS);//changedbyran
     facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_TRUE,SYM_FALSE,SYM_NOT,SYM_NULL);
 
     err = cc = cx = ll = linenum = 0; // initialize global variables
