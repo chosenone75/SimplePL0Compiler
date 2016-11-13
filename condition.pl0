@@ -1,0 +1,7 @@
+const m = 7, n = 85;
+var x:integer,y:integer,z:integer,q:integer,r:integer;
+
+
+begin
+	if 7 < 8 then x := 7 else x := 8;
+end.

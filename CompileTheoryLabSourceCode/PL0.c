@@ -30,13 +30,16 @@ void getch(void)
 {
     if (cc == ll)
     {
+		
+		linenum++;
+
         if (feof(infile))
         {
             printf("\nPROGRAM INCOMPLETE\n");
             exit(1);
         }
         ll = cc = 0;
-        printf("%5d  ", cx);
+		printf("%5d  ", linenum);
         while (!feof(infile) && (ch = getc(infile))!='\n')
         {
             printf("%c", ch);
@@ -194,6 +197,16 @@ void getsym(void)
         {
             sym = ssym[i];
             getch();
+
+			//changedbyran 判断++ 或者 --
+			if(sym == SYM_PLUS && ch == '+'){
+				sym = SYM_PLUSPLUS;
+				getch();
+			}
+			if(sym == SYM_MINUS && ch == '-'){
+				sym = SYM_MINUSMINUS;
+				getch();
+			}
         }
         else
         {
@@ -227,6 +240,7 @@ void test(symset s1, symset s2, int n)
     if (! inset(sym, s1))
     {
         error(n);
+		printf("%s %d\n",id,sym);
         s = uniteset(s1, s2);
         while(! inset(sym, s))
             getsym();
@@ -316,10 +330,8 @@ void constdeclaration()
 
 //////////////////////////////////////////////////////////////////////
 /*
-var_option → ε| var var_decl_list
-var_decl_list → var_decl; | var_decl,var_decl_list
-var_decl → ident : data_type
-data_type → integer | boolean
+VarDecl  -> var VarDecl  {VarDecl } 
+VarDec  -> ident : Type//此处我的理解与原文有出入，不想再改了：（
 */
 void vardeclaration(void)
 {
@@ -372,13 +384,8 @@ void listcode(int from, int to)
 //////////////////////////////////////////////////////////////////////
 
 /*
-
 文法表示：
-
-factor ——> id
-             | num
-			 | ( expression )
-			 ;
+Factor ->id | number | ( Exp ) | not Factor | ident [ ( ActParal ) ] | true | false
 */
 
 void factor(symset fsys)
@@ -387,6 +394,7 @@ void factor(symset fsys)
     int i;
     symset set;
     
+	
     test(facbegsys, fsys, 24); // The symbol can not be as the beginning of an expression.
 
     while (inset(sym, facbegsys))
@@ -410,8 +418,9 @@ void factor(symset fsys)
                     gen(LOD, level - mk->level, mk->address);
                     break;
 				case ID_BOOLEAN:
-					//此处gen 将布尔值转为整数值的代码并置于栈顶
-					break;
+					mk = (mask*) &table[i];
+                    gen(LOD, level - mk->level, mk->address);
+                    break;
                 case ID_PROCEDURE:
                     error(21); // Procedure identifier can not be in an expression.
                     break;
@@ -428,7 +437,18 @@ void factor(symset fsys)
             }
             gen(LIT, 0, num);
             getsym();
-        }
+		}else if(sym == SYM_TRUE){//true
+			gen(LIT, 0, 1);
+            getsym();
+		}else if(sym == SYM_FALSE){
+		    gen(LIT, 0, 0);
+            getsym();
+		}else if(sym == SYM_NOT){
+		    getsym();
+			factor(fsys);
+			gen(OPR,0,OPR_NOT);
+			getsym();
+		}
         else if (sym == SYM_LPAREN)
         {
             getsym();
@@ -451,34 +471,50 @@ void factor(symset fsys)
 //////////////////////////////////////////////////////////////////////
 /*
 文法表示:
-
-term ——> factor M
-M  ——> * M
-         |  / M
-		 | epsilon
-         ;
+Term->Factor{*Factor | / Factor | div Factor | mod Factor | and Factor}   
 */
-
 void term(symset fsys)
 {
     int mulop;
     symset set;
     
-    set = uniteset(fsys, createset(SYM_TIMES, SYM_SLASH, SYM_NULL));
+	set = uniteset(fsys, createset(SYM_TIMES, SYM_SLASH, SYM_AND,SYM_NULL));//changedbyran
     factor(set);
-    while (sym == SYM_TIMES || sym == SYM_SLASH)
+    while (sym == SYM_TIMES || sym == SYM_SLASH || sym == SYM_AND)
     {
-        mulop = sym;
-        getsym();
-        factor(set);
-        if (mulop == SYM_TIMES)
-        {
-            gen(OPR, 0, OPR_MUL);
-        }
-        else
-        {
-            gen(OPR, 0, OPR_DIV);
-        }
+		while (sym == SYM_TIMES || sym == SYM_SLASH)
+		{
+				mulop = sym;
+				getsym();
+				factor(set);
+				if (mulop == SYM_TIMES)
+				{
+					gen(OPR, 0, OPR_MUL);
+				}
+				else
+				{
+					gen(OPR, 0, OPR_DIV);
+				}
+		}
+		if(sym == SYM_AND){
+			 getsym();
+			 factor(set);
+			 while (sym == SYM_TIMES || sym == SYM_SLASH)
+				{
+						mulop = sym;
+						getsym();
+						factor(set);
+						if (mulop == SYM_TIMES)
+						{
+							gen(OPR, 0, OPR_MUL);
+						}
+						else
+						{
+							gen(OPR, 0, OPR_DIV);
+						}
+				}//whileinif
+			 gen(OPR,0,OPR_AND);
+		 }//andif
     } // while
     destroyset(set);
 } // term
@@ -499,9 +535,8 @@ void expression(symset fsys)
 {
     int addop;
     symset set;
-	int isOr = 0;
 
-    set = uniteset(fsys, createset(SYM_PLUS, SYM_MINUS, SYM_NULL));
+    set = uniteset(fsys, createset(SYM_PLUS, SYM_MINUS, SYM_OR,SYM_NULL));//changedbyran
     if (sym == SYM_PLUS || sym == SYM_MINUS)
     {
         addop = sym;
@@ -519,7 +554,7 @@ void expression(symset fsys)
 
     while (sym == SYM_PLUS || sym == SYM_MINUS || sym == SYM_OR)
     {
-		if(sym == SYM_PLUS || sym == SYM_MINUS){
+		while(sym == SYM_PLUS || sym == SYM_MINUS){
 		     addop = sym;
              getsym();
              term(set);
@@ -531,16 +566,46 @@ void expression(symset fsys)
                 {
                   gen(OPR, 0, OPR_MIN);
                 }
-		}else if(sym == SYM_OR){
-		  isOr = 1;
-	    }
+          }//while1
+		if(sym == SYM_OR){
+			     getsym();
+				 if (sym == SYM_PLUS || sym == SYM_MINUS)
+					{
+						addop = sym;
+						getsym();
+						term(set);
+						if (addop == SYM_MINUS)
+						{
+							gen(OPR, 0, OPR_NEG);
+						}
+					}
+					else
+					{
+						term(set);
+					}//文法第一部分
+			while(sym == SYM_PLUS || sym == SYM_MINUS){
+				 addop = sym;
+				 getsym();
+				 term(set);
+				 if (addop == SYM_PLUS)
+				  {
+					 gen(OPR, 0, OPR_ADD);
+				  }
+				 else
+					{
+					  gen(OPR, 0, OPR_MIN);
+					}
+			  }//while in if
+			//生成or运算
+			gen(OPR,0,OPR_OR);
+		}
     } // while
     destroyset(set);
 } // expression
 
 //////////////////////////////////////////////////////////////////////
 /*
-Condition -> odd Exp | Exp RelOp Exp
+Condition -> odd Exp | Exp RelOp Exp //不用改动
 Exp  ->  [+ | - ] Term {+ Term | - Term | or Term}
 Term->Factor{*Factor | / Factor | div Factor | mod Factor | and Factor}   
 Factor ->id | number | ( Exp ) | not Factor | ident [ ( ActParal ) ] | true | false
@@ -559,7 +624,7 @@ void condition(symset fsys)
     }
     else
     {
-        set = uniteset(relset, fsys);
+        set = uniteset(relset, fsys);//添加终结符
         expression(set);
         destroyset(set);
         if (! inset(sym, relset))
@@ -597,7 +662,18 @@ void condition(symset fsys)
 } // condition
 //ε
 //////////////////////////////////////////////////////////////////////
-
+/*
+文法表示：
+Stmt   -> id := Exp 
+              | if Exp then Stmt 
+			  | if Exp then Stmt else Stmt 
+			  | begin Stmt {; Stmt } end 
+			  | while Exp do Stmt 
+			  | exit 
+			  | call ident [ ( ActParal ) ] 
+			  | write ( Exp [, Exp ] ) 
+			  | read (IdentRef [, IdentRef ] )
+*/
 void statement(symset fsys)
 {
     int i, cx1, cx2;
@@ -629,6 +705,7 @@ void statement(symset fsys)
         expression(fsys);
 
 		//此处gen目标代码 增加类型转换语句 强转 例如 int->boolean 根据id的类型进行判断
+		//类型检查
 
         mk = (mask*) &table[i];
         if (i)
@@ -679,10 +756,25 @@ void statement(symset fsys)
         {
             error(16); // 'then' expected.
         }
-        cx1 = cx;
-        gen(JPC, 0, 0);
-        statement(fsys);
-        code[cx1].a = cx;	
+
+		cx1 = cx;
+		gen(JPC, 0, 0);
+		set1 = createset(SYM_ELSE,SYM_NULL);//changedbyran
+		set = uniteset(set1, fsys);
+		statement(set);
+
+		if(sym == SYM_ELSE){
+			    getsym();
+				cx2 = cx;
+				code[cx1].a = cx+1;//回填
+				gen(JMP,0,0);
+				statement(fsys);
+				code[cx2].a = cx;//回填
+		}else{
+			code[cx1].a = cx;//进行回填
+		}
+		destroyset(set1);
+		destroyset(set);
     }
     else if (sym == SYM_BEGIN)
     { 
@@ -733,6 +825,7 @@ void statement(symset fsys)
         {
             error(18); // 'do' expected.
         }
+
         statement(fsys);
         gen(JMP, 0, cx1);
         code[cx2].a = cx;
@@ -997,6 +1090,18 @@ void interpret()
                 top--;
                 stack[top] = stack[top] <= stack[top + 1];
                 break;
+				//changedbyran
+			case OPR_AND:
+				top--;
+				stack[top] = stack[top] && stack[top+1];
+				break;
+			case OPR_OR:
+				top--;
+				stack[top] = stack[top] || stack[top+1];
+				break;
+			case OPR_NOT:
+				stack[top] = stack[top]?0:1;
+				break;
             } // switch
             break;
         case LOD:
@@ -1050,14 +1155,14 @@ void main()
     }
 
     phi = createset(SYM_NULL);
-    relset = createset(SYM_EQU, SYM_NEQ, SYM_LES, SYM_LEQ, SYM_GTR, SYM_GEQ, SYM_NULL);
+    relset = createset(SYM_EQU, SYM_NEQ, SYM_LES, SYM_LEQ, SYM_GTR, SYM_GEQ,SYM_NULL);
     
     // create begin symbol sets
     declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
     statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL);
-    facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_NULL);
+    facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_TRUE,SYM_FALSE,SYM_NOT,SYM_NULL);
 
-    err = cc = cx = ll = 0; // initialize global variables
+    err = cc = cx = ll = linenum = 0; // initialize global variables
     ch = ' ';
     kk = MAXIDLEN;
 
