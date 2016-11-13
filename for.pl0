@@ -1,0 +1,11 @@
+const m = 7, n = 85;
+var x:integer,y:integer;
+
+(*
+  PL0源程序：  
+  功能：for循环示例
+*)
+
+begin
+	for x := 5 to 7 + 8 do y := x;  
+end.
