@@ -7,5 +7,9 @@ var x:integer,y:integer;
 *)
 
 begin
+
+
 	for x := 5 to 7 + 8 do y := x;  
+
+
 end.
