@@ -1,5 +1,4 @@
 ﻿/************  PL0.c  *************/
-
 // pl0 compiler source code
 
 #include <stdio.h>
@@ -385,7 +384,7 @@ void listcode(int from, int to)
 
 /*
 文法表示：
-Factor ->id | number | ( Exp ) | not Factor | ident [ ( ActParal ) ] | true | false
+Factor ->id | number | ( Exp ) | not Factor | ident [ ( ActParal ) ] | true | false| ++id | --id;
 */
 
 void factor(symset fsys)
@@ -462,6 +461,40 @@ void factor(symset fsys)
 			else
 			{
 				error(22); // Missing ')'.
+			}
+		}else if(sym == SYM_PLUSPLUS){
+			mask* mk;
+			getsym();
+			if(sym != SYM_IDENTIFIER) error(30);//maybebug
+			else if(!(i = position(id))) error(11);
+			else{
+				mk = (mask*) &table[i];
+				if(mk->kind == ID_PROCEDURE) error(21);
+				else{//标识符为变量的情况
+					gen(LOD,level - mk->level,mk->address);//++id的指令流程;
+					gen(LIT,0,1);
+					gen(OPR,0,OPR_ADD);
+					gen(STO,level - mk->level,mk->address);
+					gen(LOD,level - mk->level,mk->address);
+					getsym();
+				}
+			}
+		}else if(sym == SYM_MINUSMINUS){
+		    mask* mk;
+			getsym();
+			if(sym != SYM_IDENTIFIER) error(30);//maybebug
+			else if(!(i = position(id))) error(11);
+			else{
+				mk = (mask*) &table[i];
+				if(mk->kind == ID_PROCEDURE) error(21);
+				else{//标识符为变量的情况
+					gen(LOD,level - mk->level,mk->address);//--id的指令流程;
+					gen(LIT,0,1);
+					gen(OPR,0,OPR_MIN);
+					gen(STO,level - mk->level,mk->address);
+					gen(LOD,level - mk->level,mk->address);
+					getsym();
+				}
 			}
 		}
 		test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);
@@ -970,6 +1003,8 @@ void statement(symset fsys)
 		}else{
 			error(30);
 		}
+	}else if(sym == SYM_EXIT){
+
 	}
 	test(fsys, phi, 19);
 } // statement
@@ -1301,7 +1336,7 @@ void main()
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
 	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL,SYM_PLUSPLUS,SYM_MINUSMINUS);//changedbyran
-	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_TRUE,SYM_FALSE,SYM_NOT,SYM_NULL);
+	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_TRUE,SYM_FALSE,SYM_NOT,SYM_PLUSPLUS,SYM_MINUSMINUS,SYM_NULL);
 
 	err = cc = cx = ll = linenum = 0; // initialize global variables
 	ch = ' ';

@@ -1,5 +1,5 @@
 const m = 7, n = 85;
-var x:integer,y:integer;
+var x:integer,y:integer,c:integer;
 
 (*
   PL0Ô´³ÌĞò£º  
@@ -8,8 +8,9 @@ var x:integer,y:integer;
 
 begin
 
-
-	for x := 5 to 7 + 8 do y := x;  
+        
+        c := 5;     
+	for x := ++c to 7 + 8 do y := x;  
 
 
 end.
