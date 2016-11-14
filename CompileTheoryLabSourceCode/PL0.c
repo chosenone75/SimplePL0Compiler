@@ -384,7 +384,7 @@ void listcode(int from, int to)
 
 /*
 文法表示：
-Factor ->id | number | ( Exp ) | not Factor | ident [ ( ActParal ) ] | true | false| ++id | --id;
+Factor ->id | id++ | id-- | number | ( Exp ) | not Factor | ident [ ( ActParal ) ] | true | false| ++id | --id;
 */
 
 void factor(symset fsys)
@@ -424,8 +424,34 @@ void factor(symset fsys)
 					error(21); // Procedure identifier can not be in an expression.
 					break;
 				} // switch
+			    getsym();
+
+				if(sym == SYM_PLUSPLUS){
+					mask *mk = (mask*)&table[i];   
+					if(mk->kind == ID_INTEGER || mk->kind == ID_INTEGER){
+					       gen(LIT,0,1);
+						   gen(OPR,0,OPR_ADD);
+						   gen(STO,level - mk->level,mk->address);
+						   gen(LOD,level - mk->level,mk->address);
+						   gen(LIT,0,1);
+						   gen(OPR,0,OPR_MIN);
+						   getsym();
+					}
+				}
+				if(sym == SYM_MINUSMINUS){
+				    mask *mk = (mask*)&table[i];   
+					if(mk->kind == ID_INTEGER || mk->kind == ID_INTEGER){
+					       gen(LIT,0,1);
+						   gen(OPR,0,OPR_MIN);
+						   gen(STO,level - mk->level,mk->address);
+						   gen(LOD,level - mk->level,mk->address);
+						   gen(LIT,0,1);
+						   gen(OPR,0,OPR_ADD);
+						   getsym();
+					
+				}
+			  }
 			}
-			getsym();
 		}
 		else if (sym == SYM_NUMBER)
 		{
@@ -1005,6 +1031,7 @@ void statement(symset fsys)
 		}
 	}else if(sym == SYM_EXIT){
 
+		getsym();
 	}
 	test(fsys, phi, 19);
 } // statement
