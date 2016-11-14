@@ -424,33 +424,33 @@ void factor(symset fsys)
 					error(21); // Procedure identifier can not be in an expression.
 					break;
 				} // switch
-			    getsym();
+				getsym();
 
 				if(sym == SYM_PLUSPLUS){//后++
 					mask *mk = (mask*)&table[i];   
 					if(mk->kind == ID_INTEGER || mk->kind == ID_INTEGER){
-					       gen(LIT,0,1);
-						   gen(OPR,0,OPR_ADD);
-						   gen(STO,level - mk->level,mk->address);
-						   gen(LOD,level - mk->level,mk->address);
-						   gen(LIT,0,1);
-						   gen(OPR,0,OPR_MIN);
-						   getsym();
+						gen(LIT,0,1);
+						gen(OPR,0,OPR_ADD);
+						gen(STO,level - mk->level,mk->address);
+						gen(LOD,level - mk->level,mk->address);
+						gen(LIT,0,1);
+						gen(OPR,0,OPR_MIN);
+						getsym();
 					}
 				}
 				if(sym == SYM_MINUSMINUS){//后--
-				    mask *mk = (mask*)&table[i];   
+					mask *mk = (mask*)&table[i];   
 					if(mk->kind == ID_INTEGER || mk->kind == ID_INTEGER){
-					       gen(LIT,0,1);
-						   gen(OPR,0,OPR_MIN);
-						   gen(STO,level - mk->level,mk->address);
-						   gen(LOD,level - mk->level,mk->address);
-						   gen(LIT,0,1);
-						   gen(OPR,0,OPR_ADD);
-						   getsym();
-					
+						gen(LIT,0,1);
+						gen(OPR,0,OPR_MIN);
+						gen(STO,level - mk->level,mk->address);
+						gen(LOD,level - mk->level,mk->address);
+						gen(LIT,0,1);
+						gen(OPR,0,OPR_ADD);
+						getsym();
+
+					}
 				}
-			  }
 			}
 		}
 		else if (sym == SYM_NUMBER)
@@ -506,7 +506,7 @@ void factor(symset fsys)
 				}
 			}
 		}else if(sym == SYM_MINUSMINUS){//前--;
-		    mask* mk;
+			mask* mk;
 			getsym();
 			if(sym != SYM_IDENTIFIER) error(30);//maybebug
 			else if(!(i = position(id))) error(11);
@@ -766,8 +766,10 @@ void statement(symset fsys)
 
 		expression(fsys);
 
-		//此处gen目标代码 增加类型转换语句 强转 例如 int->boolean 根据id的类型进行判断
+		//2.此处gen目标代码 增加类型转换语句 强转 例如 int->boolean 根据id的类型进行判断
 		//类型检查
+
+		//1.此处还需判断后++，--操作
 
 		mk = (mask*) &table[i];
 		if (i)
@@ -1029,11 +1031,74 @@ void statement(symset fsys)
 		}else{
 			error(30);
 		}
-	}else if(sym == SYM_EXIT){
+	}else if(sym == SYM_EXIT){//exit语句
 		gen(OPR,0,OPR_RET);//直接返回上一过程或者终止执行
 		getsym();
+	}else if(sym == SYM_READ){
+		/* read (Id[, Id ] )*/
+		getsym();
+
+		if(sym != SYM_LPAREN) error(35);//maybebug
+		do{
+			mask* mk;
+			getsym();
+			if(sym != SYM_IDENTIFIER) error(30);
+			else{
+				if(!(i = position(id))){
+					error(11);
+				}else{
+					mk = (mask*)& table[i];
+
+					if(mk->kind == ID_BOOLEAN || mk ->kind == ID_PROCEDURE){
+						error(36);
+					}else{
+						gen(OPR,0,OPR_READ);
+						gen(STO,level - mk->level,mk ->address);
+					}
+				}
+			}
+			getsym();
+		}while(sym == SYM_COMMA);
+
+		if(sym == SYM_RPAREN){
+			getsym();
+		}else{
+			error(37);
+		}
+
+	}else if(sym == SYM_WRITE){
+		/*write ( expression [, expression ] )*/
+		getsym();
+		if(sym != SYM_LPAREN) error(35);
+		do{
+			mask* mk;
+			getsym();
+			if(sym != SYM_IDENTIFIER) error(30);
+			else{
+				if(!(i = position(id))){
+					error(11);
+				}else{
+					mk = (mask*)& table[i];
+
+					if(mk->kind == ID_BOOLEAN || mk ->kind == ID_PROCEDURE){
+						error(36);
+					}else{
+						gen(LOD,level - mk->level,mk ->address);
+						gen(OPR,0,OPR_WRITE);
+					}
+				}
+			}
+			getsym();
+		}while(sym == SYM_COMMA);
+
+		if(sym == SYM_RPAREN){
+			getsym();
+		}else{
+			error(37);
+		}
 	}
-	test(fsys, phi, 19);
+
+	test(fsys, phi, 19);//出错补救
 } // statement
 
 //////////////////////////////////////////////////////////////////////
@@ -1305,6 +1370,14 @@ void interpret()
 			case OPR_NOT:
 				stack[top] = stack[top]?0:1;
 				break;
+			case OPR_READ:
+				top++;
+				scanf("%d",&stack[top]);
+				break;
+			case OPR_WRITE:
+				printf("%d\n",stack[top]);
+				--top;
+				break;
 			} // switch
 			break;
 		case LOD:
@@ -1312,7 +1385,7 @@ void interpret()
 			break;
 		case STO:
 			stack[base(stack, b, i.l) + i.a] = stack[top];
-			printf("%d\n", stack[top]);
+			//printf("%d\n", stack[top]);
 			top--;
 			break;
 		case CAL:
@@ -1362,7 +1435,7 @@ void main()
 
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
-	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL,SYM_PLUSPLUS,SYM_MINUSMINUS);//changedbyran
+	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE,SYM_PLUSPLUS,SYM_MINUSMINUS,SYM_READ,SYM_WRITE,SYM_NULL);//changedbyran
 	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_TRUE,SYM_FALSE,SYM_NOT,SYM_PLUSPLUS,SYM_MINUSMINUS,SYM_NULL);
 
 	err = cc = cx = ll = linenum = 0; // initialize global variables

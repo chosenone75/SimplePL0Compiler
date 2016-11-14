@@ -1,0 +1,16 @@
+const m = 7, n = 85;
+var x:integer,y:integer,c:integer;
+
+(*
+  PL0源程序：  
+  功能：read功能和write功能示例
+*)
+
+
+
+begin
+
+        read(c);
+        x := c;  
+        write(x);   
+end.
