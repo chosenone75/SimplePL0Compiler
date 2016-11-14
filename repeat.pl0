@@ -1,0 +1,15 @@
+var x:integer,y:integer,c:integer;
+
+(*
+  PL0源程序：  
+  功能：repeat语句示例
+*)
+
+begin 
+  
+     x := 4;  
+
+     repeat x++ until x > 10;
+   
+        
+end.

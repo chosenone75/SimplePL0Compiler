@@ -239,7 +239,7 @@ void test(symset s1, symset s2, int n)
 	if (! inset(sym, s1))
 	{
 		error(n);
-		printf("%s %d\n",id,sym);
+		//printf("%s %d\n",id,sym); //just for test
 		s = uniteset(s1, s2);
 		while(! inset(sym, s))
 			getsym();
@@ -729,12 +729,14 @@ Stmt   -> id := Exp
 | begin Stmt {; Stmt } end 
 | while Exp do Stmt 
 | exit 
-| call ident [ ( ActParal ) ] 
+| call ident 
 | write ( Exp [, Exp ] ) 
-| read (IdentRef [, IdentRef ] )
+| read (Id [, Id ] )
 | for id := Exp to Exp do Stmt
 | for id := Exp downto Exp do Stmt //各自循环步长为1或-1
 | ++id|--id|id++|id--;
+| repeat statement until condition
+;
 */
 void statement(symset fsys)
 {
@@ -1110,6 +1112,21 @@ void statement(symset fsys)
 		}else{
 			error(37);
 		}
+	}else if(sym == SYM_REPEAT){
+
+		getsym();
+		cx1 = cx;
+		set1 = createset(SYM_UNTIL, SYM_NULL);//can be followed by until
+		set = uniteset(set1, fsys);
+		statement(set);
+		destroyset(set1);
+		destroyset(set);
+
+		if(sym != SYM_UNTIL) error(39);//maybebug
+		getsym();
+		condition(fsys);
+		gen(JPC,0,cx1);
+
 	}
 
 	test(fsys, phi, 19);//出错补救
@@ -1449,7 +1466,7 @@ void main()
 
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
-	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE,SYM_PLUSPLUS,SYM_MINUSMINUS,SYM_READ,SYM_WRITE,SYM_NULL);//changedbyran
+	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE,SYM_PLUSPLUS,SYM_MINUSMINUS,SYM_READ,SYM_WRITE,SYM_REPEAT,SYM_NULL);//changedbyran
 	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_TRUE,SYM_FALSE,SYM_NOT,SYM_PLUSPLUS,SYM_MINUSMINUS,SYM_NULL);
 
 	err = cc = cx = ll = linenum = 0; // initialize global variables
