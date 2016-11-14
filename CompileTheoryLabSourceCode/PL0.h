@@ -2,10 +2,10 @@
 
 #include <stdio.h>
 
-#define NRW        11     // number of reserved words
+#define NRW        27    // number of reserved words
 #define TXMAX      500    // length of identifier table
 #define MAXNUMLEN  14     // maximum number of digits in numbers
-#define NSYM       10     // maximum number of symbols in array ssym and csym
+#define NSYM       11     // maximum number of symbols in array ssym and csym
 #define MAXIDLEN   10     // length of identifiers
 
 #define MAXADDRESS 32767  // maximum address
@@ -15,7 +15,6 @@
 #define MAXSYM     30     // maximum number of symbols  
 
 #define STACKSIZE  1000   // maximum storage
-
 enum symtype
 {
 	SYM_NULL,
@@ -47,12 +46,32 @@ enum symtype
 	SYM_CALL,
 	SYM_CONST,
 	SYM_VAR,
-	SYM_PROCEDURE
+	SYM_PROCEDURE,
+	/*changedbyran*/
+	SYM_INTEGER,
+	SYM_BOOLEAN,
+	SYM_COLON,
+	SYM_TRUE,
+	SYM_FALSE,
+	SYM_AND,
+	SYM_NOT,
+	SYM_OR,
+	SYM_ELSE,
+	SYM_PLUSPLUS,
+	SYM_MINUSMINUS,
+	SYM_FOR,
+	SYM_DOWNTO,
+	SYM_TO,
+	SYM_EXIT,
+	SYM_READ,
+	SYM_WRITE,
+	SYM_REPEAT,
+	SYM_UNTIL
 };
 
 enum idtype
 {
-	ID_CONSTANT, ID_VARIABLE, ID_PROCEDURE
+	ID_CONSTANT, ID_VARIABLE, ID_PROCEDURE,ID_INTEGER,ID_BOOLEAN
 };
 
 enum opcode
@@ -65,7 +84,7 @@ enum oprcode
 	OPR_RET, OPR_NEG, OPR_ADD, OPR_MIN,
 	OPR_MUL, OPR_DIV, OPR_ODD, OPR_EQU,
 	OPR_NEQ, OPR_LES, OPR_LEQ, OPR_GTR,
-	OPR_GEQ
+	OPR_GEQ,/* changed by ran*/OPR_AND,OPR_OR,OPR_NOT,OPR_READ,OPR_WRITE
 };
 
 
@@ -90,7 +109,7 @@ char* err_msg[] =
 /*  8 */    "Follow the statement is an incorrect symbol.",
 /*  9 */    "'.' expected.",
 /* 10 */    "';' expected.",
-/* 11 */    "Undeclared identifier.",
+/* 11 */    "这个标识符你没声明",
 /* 12 */    "Illegal assignment.",
 /* 13 */    "':=' expected.",
 /* 14 */    "There must be an identifier to follow the 'call'.",
@@ -105,13 +124,19 @@ char* err_msg[] =
 /* 23 */    "The symbol can not be followed by a factor.",
 /* 24 */    "The symbol can not be as the beginning of an expression.",
 /* 25 */    "The number is too great.",
-/* 26 */    "",
-/* 27 */    "",
-/* 28 */    "",
-/* 29 */    "",
-/* 30 */    "",
-/* 31 */    "",
-/* 32 */    "There are too many levels."
+/* 26 */    "你忘了声明变量的类型了~ ",
+/* 27 */    "编译器不知道你说的是啥类型：（",
+/* 28 */    "跟在此运算符后的必须为整型变量: )",
+/* 29 */    "必须有个名字跟着++或--: )",
+/* 30 */    "必须有个标识符: )",
+/* 31 */    "这需要个变量: )",
+/* 32 */    "There are too many levels.",
+/* 33 */    "这应该有个downto或者to : ) ",
+/* 34 */    "你在for少写了个do : ) ",
+/* 35 */    "缺个左括号 手动微笑: ) ",
+/* 36 */    "只能读入或者输出整数 : ) ",
+/* 37 */    "缺个右括号 手动微笑: ) ",
+/* 38 */    "不正确的运算符号 : ) "
 };
 //////////////////////////////////////////////////////////////////////
 
@@ -126,33 +151,37 @@ int  err;
 int  cx;         // index of current instruction to be generated. 即nextquad
 int  level = 0;
 int  tx = 0;
+int linenum = 0;
 
 char line[80];//类似缓冲区的作用
 
 instruction code[CXMAX];
 
+//此处可优化例如改成折半查找提高查询效率。
 char* word[NRW + 1] =
 {
 	"", /* place holder */
 	"begin", "call", "const", "do", "end","if",
-	"odd", "procedure", "then", "var", "while"
+	"odd", "procedure", "then", "var", "while","integer"
+	,"boolean","true","false","and","not","or","else","for","to","downto","exit","read","write","repeat","until"
 };
 
 int wsym[NRW + 1] =
 {
 	SYM_NULL, SYM_BEGIN, SYM_CALL, SYM_CONST, SYM_DO, SYM_END,
-	SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE
+	SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE,SYM_INTEGER,SYM_BOOLEAN,
+	SYM_TRUE,SYM_FALSE,SYM_AND,SYM_NOT,SYM_OR,SYM_ELSE,SYM_FOR,SYM_TO,SYM_DOWNTO,SYM_EXIT,SYM_READ,SYM_WRITE,SYM_REPEAT,SYM_UNTIL
 };
 
 int ssym[NSYM + 1] =
 {
 	SYM_NULL, SYM_PLUS, SYM_MINUS, SYM_TIMES, SYM_SLASH,
-	SYM_LPAREN, SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON
+	SYM_LPAREN, SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON,SYM_COLON
 };
 
 char csym[NSYM + 1] =
 {
-	' ', '+', '-', '*', '/', '(', ')', '=', ',', '.', ';'
+	' ', '+', '-', '*', '/', '(', ')', '=', ',', '.', ';',':'
 };
 
 #define MAXINS   8
