@@ -924,7 +924,6 @@ void statement(symset fsys)
 				error(28); // Illegal assignment.
 				i = 0;
 			}else{
-				getsym();
 				mk = (mask*) &table[i];
 				if (i)
 				{
@@ -933,6 +932,7 @@ void statement(symset fsys)
 					gen(OPR,0,OPR_ADD);
 					gen(STO, level - mk->level, mk->address);//level - mk->level 即为 level_diff 层次差
 				}
+				getsym();
 			}	
 		}else{
 			error(29);
@@ -1117,10 +1117,8 @@ void statement(symset fsys)
 		getsym();
 		cx1 = cx;
 		set1 = createset(SYM_UNTIL, SYM_NULL);//can be followed by until
-		set = uniteset(set1, fsys);
-		statement(set);
+		statement(set1);
 		destroyset(set1);
-		destroyset(set);
 
 		if(sym != SYM_UNTIL) error(39);//maybebug
 		getsym();

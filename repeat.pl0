@@ -9,7 +9,7 @@ begin
   
      x := 4;  
 
-     repeat x++ until x > 10;
+     repeat x++(*;*) until x > 10;
    
         
 end.
