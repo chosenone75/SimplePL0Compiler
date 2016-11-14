@@ -11,6 +11,7 @@ var x:integer,y:integer,c:integer;
 begin
 
         read(c);
-        x := c;  
+        x := c;
+        x++;   
         write(x);   
 end.

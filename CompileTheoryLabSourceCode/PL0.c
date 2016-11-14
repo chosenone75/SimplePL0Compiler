@@ -753,28 +753,42 @@ void statement(symset fsys)
 		{
 			error(12); // Illegal assignment.
 			i = 0;
-		}
-		getsym();
-		if (sym == SYM_BECOMES)
-		{
+		}else{
+			mk = (mask*) &table[i];
 			getsym();
-		}
-		else
-		{
-			error(13); // ':=' expected.
-		}
+			if (sym == SYM_BECOMES)
+			{
+				getsym();
+				expression(fsys);
+				
+				//此处gen目标代码 增加类型转换语句 强转 例如 int->boolean 根据id的类型进行判断
+				//类型检查
+				
+				if (i)
+				{
+					gen(STO, level - mk->level, mk->address);//level - mk->level 即为 level_diff 层次差
+				}
+			}else if(sym == SYM_PLUSPLUS){
+				//++的指令流程
+				gen(LOD,level - mk->level,mk->address);
+				gen(LIT,0,1);
+				gen(OPR,0,OPR_ADD);
+				gen(STO,level - mk->level,mk->address);
+				getsym();
 
-		expression(fsys);
-
-		//2.此处gen目标代码 增加类型转换语句 强转 例如 int->boolean 根据id的类型进行判断
-		//类型检查
-
-		//1.此处还需判断后++，--操作
-
-		mk = (mask*) &table[i];
-		if (i)
-		{
-			gen(STO, level - mk->level, mk->address);//level - mk->level 即为 level_diff 层次差
+			}else if(sym == SYM_MINUSMINUS){
+				//--的指令流程
+				gen(LOD,level - mk->level,mk->address);
+				gen(LIT,0,1);
+				gen(OPR,0,OPR_ADD);
+				gen(STO,level - mk->level,mk->address);
+				
+				getsym();
+			}//此处可扩展诸如*=，+=，/=等符号，具体做法类同++
+			else
+			{
+				error(38); // 无法识别的运算符.
+			}
 		}
 	}
 	else if (sym == SYM_CALL)
@@ -1385,7 +1399,7 @@ void interpret()
 			break;
 		case STO:
 			stack[base(stack, b, i.l) + i.a] = stack[top];
-			//printf("%d\n", stack[top]);
+			printf("%d\n", stack[top]);
 			top--;
 			break;
 		case CAL:
