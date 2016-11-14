@@ -426,7 +426,7 @@ void factor(symset fsys)
 				} // switch
 			    getsym();
 
-				if(sym == SYM_PLUSPLUS){
+				if(sym == SYM_PLUSPLUS){//后++
 					mask *mk = (mask*)&table[i];   
 					if(mk->kind == ID_INTEGER || mk->kind == ID_INTEGER){
 					       gen(LIT,0,1);
@@ -438,7 +438,7 @@ void factor(symset fsys)
 						   getsym();
 					}
 				}
-				if(sym == SYM_MINUSMINUS){
+				if(sym == SYM_MINUSMINUS){//后--
 				    mask *mk = (mask*)&table[i];   
 					if(mk->kind == ID_INTEGER || mk->kind == ID_INTEGER){
 					       gen(LIT,0,1);
@@ -488,7 +488,7 @@ void factor(symset fsys)
 			{
 				error(22); // Missing ')'.
 			}
-		}else if(sym == SYM_PLUSPLUS){
+		}else if(sym == SYM_PLUSPLUS){//前++
 			mask* mk;
 			getsym();
 			if(sym != SYM_IDENTIFIER) error(30);//maybebug
@@ -505,7 +505,7 @@ void factor(symset fsys)
 					getsym();
 				}
 			}
-		}else if(sym == SYM_MINUSMINUS){
+		}else if(sym == SYM_MINUSMINUS){//前--;
 		    mask* mk;
 			getsym();
 			if(sym != SYM_IDENTIFIER) error(30);//maybebug
@@ -891,7 +891,7 @@ void statement(symset fsys)
 		statement(fsys);
 		gen(JMP, 0, cx1);
 		code[cx2].a = cx;
-	}else if(sym == SYM_PLUSPLUS)
+	}else if(sym == SYM_PLUSPLUS)//前++运算
 	{
 		//++运算
 		mask* mk;
@@ -919,7 +919,7 @@ void statement(symset fsys)
 		}else{
 			error(29);
 		}
-	}else if(sym == SYM_MINUSMINUS){
+	}else if(sym == SYM_MINUSMINUS){//前--运算
 		//--运算
 		mask* mk;
 		getsym();
@@ -1030,7 +1030,7 @@ void statement(symset fsys)
 			error(30);
 		}
 	}else if(sym == SYM_EXIT){
-
+		gen(OPR,0,OPR_RET);//直接返回上一过程或者终止执行
 		getsym();
 	}
 	test(fsys, phi, 19);
