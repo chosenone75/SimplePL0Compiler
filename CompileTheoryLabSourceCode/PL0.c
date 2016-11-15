@@ -472,7 +472,6 @@ void factor(symset fsys)
 			getsym();
 			factor(fsys);
 			gen(OPR,0,OPR_NOT);
-			getsym();
 		}
 		else if (sym == SYM_LPAREN)
 		{
@@ -1089,7 +1088,7 @@ void statement(symset fsys)
 		do{
 			mask* mk;
 			getsym();
-			if(sym != SYM_IDENTIFIER) error(30);
+			if(sym != SYM_IDENTIFIER) error(100);
 			else{
 				if(!(i = position(id))){
 					error(11);
@@ -1272,7 +1271,7 @@ void block(symset fsys)
 	destroyset(set);
 	gen(OPR, 0, OPR_RET); // return
 	test(fsys, phi, 8); // test for error: Follow the statement is an incorrect symbol.
-	listcode(cx0, cx);
+	//listcode(cx0, cx);
 } // block
 
 //////////////////////////////////////////////////////////////////////
@@ -1414,7 +1413,7 @@ void interpret()
 			break;
 		case STO:
 			stack[base(stack, b, i.l) + i.a] = stack[top];
-			printf("%d\n", stack[top]);
+			//printf("%d\n", stack[top]);
 			top--;
 			break;
 		case CAL:

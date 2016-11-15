@@ -3,5 +3,11 @@ var x:integer,y:integer,z:integer,q:integer,r:integer;
 
 
 begin
-	if 7 < 8 then x := 7 else x := 8;
+
+        x := 7;
+        y := 8;
+        z := 14;
+        q := 0;
+        r := 0;   
+ 	if  false < x+y and r or not q  then write(x) else write(y);
 end.
