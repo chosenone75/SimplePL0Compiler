@@ -1086,24 +1086,11 @@ void statement(symset fsys)
 		getsym();
 		if(sym != SYM_LPAREN) error(35);
 		do{
-			mask* mk;
 			getsym();
-			if(sym != SYM_IDENTIFIER) error(100);
-			else{
-				if(!(i = position(id))){
-					error(11);
-				}else{
-					mk = (mask*)& table[i];
-
-					if(mk->kind == ID_BOOLEAN || mk ->kind == ID_PROCEDURE){
-						error(36);
-					}else{
-						gen(LOD,level - mk->level,mk ->address);
-						gen(OPR,0,OPR_WRITE);
-					}
-				}
-			}
-			getsym();
+			set1 = createset(SYM_COMMA,SYM_RPAREN,SYM_NULL);
+			expression(set1);
+			gen(OPR,0,OPR_WRITE);
+			destroyset(set1);
 		}while(sym == SYM_COMMA);
 
 		if(sym == SYM_RPAREN){

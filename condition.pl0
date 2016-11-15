@@ -9,5 +9,5 @@ begin
         z := 14;
         q := 0;
         r := 0;   
- 	if  false < x+y and r or not q  then write(x) else write(y);
+ 	if  false < x+y and r or not q  then write(1) else write(0);
 end.
