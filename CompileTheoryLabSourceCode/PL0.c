@@ -781,7 +781,7 @@ void statement(symset fsys)
 				//--的指令流程
 				gen(LOD,level - mk->level,mk->address);
 				gen(LIT,0,1);
-				gen(OPR,0,OPR_ADD);
+				gen(OPR,0,OPR_MIN);
 				gen(STO,level - mk->level,mk->address);
 				
 				getsym();
@@ -1258,7 +1258,7 @@ void block(symset fsys)
 	destroyset(set);
 	gen(OPR, 0, OPR_RET); // return
 	test(fsys, phi, 8); // test for error: Follow the statement is an incorrect symbol.
-	//listcode(cx0, cx);
+	listcode(cx0, cx);
 } // block
 
 //////////////////////////////////////////////////////////////////////
